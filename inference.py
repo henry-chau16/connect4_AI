@@ -19,7 +19,7 @@ with ruleset('connect4'):
     def open_triple(c):
         row = c.m.f1['row']
         col = c.m.f1['col']
-        print(f"✅ Detected open triple at row {row}, starting col {col}")
+        print(f"Detected open triple at row {row}, starting col {col}")
         c.assert_fact('score', {'value': 50})
 
 
