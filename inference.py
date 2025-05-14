@@ -18,197 +18,212 @@ from durable.lang import *
 
 # === RULE BASE ======================================================================== #
 
+global_score = {'value': 0}
+
 with ruleset('connect4'):
 
     ### OFFENSIVE (SCORING) RULES ### --------------------------------------------------
 
-    ## Winning rules (4 in a row): score: +1000 (Always go for win)
-    #  4 rules for each direction (horizontal, vertical, down-left diagonal, down-right diagonal)
-
-    # horizontal
     @when_all(
-        c.f1 << (m.type == 'cell') & (m.value == m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.target) & (m.row == m.f1.row) & (m.col == m.f1.col + 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.target) & (m.row == m.f1.row) & (m.col == m.f1.col + 2),
-        c.f4 << (m.type == 'cell') & (m.value == m.f1.target) & (m.row == m.f1.row) & (m.col == m.f1.col + 3)
+        m.type == 'board'
     )
-    def win_horizontal(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"Winning horizontal pattern starting at ({col}, {row})")
-        c.assert_fact({'type': 'score', 'value': 1000})
+    def analyze_board(c):
+        board = c.m.board
+        target = c.m.target
+        rows = len(board)
+        cols = len(board[0])
+        center_col = cols // 2
+        opponent = 'O' if target == 'X' else 'X'
 
-    @when_all(
-        c.f1 << (m.type == 'cell') & (m.value == m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.target) & (m.col == m.f1.col) & (m.row == m.f1.row + 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.target) & (m.col == m.f1.col) & (m.row == m.f1.row + 2),
-        c.f4 << (m.type == 'cell') & (m.value == m.f1.target) & (m.col == m.f1.col) & (m.row == m.f1.row + 3)
-    )
-    def win_vertical(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"Winning vertical pattern starting at ({col}, {row})")
-        c.assert_fact({'type': 'score', 'value': 1000})
+        ### WIN 4 in a row
 
-    # diagonal (down-left)
-    @when_all(
-        c.f1 << (m.type == 'cell') & (m.value == m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.target) & (m.row == m.f1.row + 1) & (m.col == m.f1.col - 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.target) & (m.row == m.f1.row + 2) & (m.col == m.f1.col - 2),
-        c.f4 << (m.type == 'cell') & (m.value == m.f1.target) & (m.row == m.f1.row + 3) & (m.col == m.f1.col - 3)
-    )
-    def win_diag_dl(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"Winning diagonal starting at ({row}, {col})")
-        c.assert_fact({'type': 'score', 'value': 1000})
+        # Horizontal
+        for r in range(rows):
+            for c0 in range(cols - 3):
+                if (board[r][c0] == target and
+                    board[r][c0+1] == target and
+                    board[r][c0+2] == target and
+                    board[r][c0+3] == target):
+                    logger.info(f"[RULE FIRED] Detected horizontal win at row {r}, col {c0}")
+                    global_score['value'] += 1000
+                    logger.info(f"score {global_score['value']}")
+        
+        # Vertical
+        for r in range(rows - 3):
+            for c0 in range(cols):
+                if (board[r][c0] == target and
+                    board[r + 1][c0] == target and
+                    board[r + 2][c0] == target and
+                    board[r + 3][c0] == target):
+                    logger.info(f"[Vertical Win] at col {c0}, starting row {r}")
+                    global_score['value'] += 1000
+                    logger.info(f"score {global_score['value']}")
 
-    # diagonal (down-right)
-    @when_all(
-        c.f1 << (m.type == 'cell') & (m.value == m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.target) & (m.row == m.f1.row + 1) & (m.col == m.f1.col + 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.target) & (m.row == m.f1.row + 2) & (m.col == m.f1.col + 2),
-        c.f4 << (m.type == 'cell') & (m.value == m.f1.target) & (m.row == m.f1.row + 3) & (m.col == m.f1.col + 3)
-    )
-    def win_diag_dr(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"🏆 Winning diagonal starting at ({row}, {col})")
-        c.assert_fact({'type': 'score', 'value': 1000})
+        # Diag down left
+        for r in range(rows - 3):
+            for c0 in range(cols - 3):
+                if (board[r][c0] == target and
+                    board[r + 1][c0 + 1] == target and
+                    board[r + 2][c0 + 2] == target and
+                    board[r + 3][c0 + 3] == target):
+                    logger.info(f"[Positive Diagonal Win] from ({r},{c0})")
+                    global_score['value'] += 1000
+                    logger.info(f"score {global_score['value']}")
+        
+        # Diag down right
+        for r in range(3, rows):
+            for c0 in range(cols - 3):
+                if (board[r][c0] == target and
+                    board[r - 1][c0 + 1] == target and
+                    board[r - 2][c0 + 2] == target and
+                    board[r - 3][c0 + 3] == target):
+                    logger.info(f"[Negative Diagonal Win] from ({r},{c0})")
+                    global_score['value'] += 1000 
+                    logger.info(f"score {global_score['value']}")
 
+        ### Open Triple
 
-    ## Open triple rules (3 in a row with unblocked 4th): score: +50 (high priority)
-    #  4 rules for each direction (horizontal, vertical, down-left diagonal, down-right diagonal)
+        # Horizontal
+        for r in range(rows):
+            for c0 in range(cols - 3):
+                window = [board[r][c0 + i] for i in range(4)]
+                if (window[:3] == [target] * 3 and window[3] == ' ') or \
+                (window[0] == ' ' and window[1:] == [target] * 3):
+                    logger.info(f"[Open Horizontal Triple] at row {r}, col {c0}")
+                    global_score['value'] += 50
+                    logger.info(f"score {global_score['value']}")
 
-    # horizontal
-    @when_all(
-        c.f1 << (m.type == 'cell') & (m.value == m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.target) & (m.row == m.f1.row) & (m.col == m.f1.col + 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.target) & (m.row == m.f1.row) & (m.col == m.f1.col + 2),
-        c.f4 << (m.type == 'cell') & (m.value == ' ') & (m.row == m.f1.row) & (m.col == m.f1.col + 3)
-    )
-    def open_triple_horizontal(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"Detected open triple starting at ({col}, {row})")
-        c.assert_fact({'type': 'score', 'value': 50})
+        # Vertical
+        for r in range(rows - 3):
+            for c0 in range(cols):
+                if (board[r][c0] == target and
+                    board[r + 1][c0] == target and
+                    board[r + 2][c0] == target and
+                    board[r + 3][c0] == ' '):
+                    logger.info(f"[Open Vertical Triple] at col {c0}, starting row {r}")
+                    global_score['value'] += 50
+                    logger.info(f"score {global_score['value']}")
 
-    ### DEFENSIVE (BLOCK AND TANGLE) RULES ### -----------------------------------------------
+        # Diag down left
+        for r in range(rows - 3):
+            for c0 in range(cols - 3):
+                diag = [board[r + i][c0 + i] for i in range(4)]
+                if diag[:3] == [target] * 3 and diag[3] == ' ':
+                    logger.info(f"[Open ↘ Triple] from ({r},{c0})")
+                    global_score['value'] += 50
+                    logger.info(f"score {global_score['value']}")
+                elif diag[0] == ' ' and diag[1:] == [target] * 3:
+                    logger.info(f"[Open ↘ Triple] ending at ({r+3},{c0+3})")
+                    global_score['value'] += 50
+                    logger.info(f"score {global_score['value']}")
 
-    ## Opponent win rules (Opponent 4 in a row): score: -1000 (Must avoid)
-    #  4 rules for each direction (horizontal, vertical, down-left diagonal, down-right diagonal)
+        # Diag down right
+        for r in range(3, rows):
+            for c0 in range(cols - 3):
+                diag = [board[r - i][c0 + i] for i in range(4)]
+                if diag[:3] == [target] * 3 and diag[3] == ' ':
+                    logger.info(f"[Open ↗ Triple] from ({r},{c0})")
+                    global_score['value'] += 50
+                    logger.info(f"score {global_score['value']}")
+                elif diag[0] == ' ' and diag[1:] == [target] * 3:
+                    logger.info(f"[Open ↗ Triple] ending at ({r-3},{c0+3})")
+                    global_score['value'] += 50
+                    logger.info(f"score {global_score['value']}")
 
-    # horizontal
-    @when_all(
-        c.f1 << (m.type == 'cell') & (m.value != ' ') & (m.value != m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row) & (m.col == m.f1.col + 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row) & (m.col == m.f1.col + 2),
-        c.f4 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row) & (m.col == m.f1.col + 3)
-    )
-    def lose_horizontal(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"Opponent horizontal win detected starting at ({col}, {row})")
-        c.assert_fact({'type': 'score', 'value': -1000})
+        ### Opponent open triple
 
-    # vertical
-    @when_all(
-        c.f1 << (m.type == 'cell') & (m.value != ' ') & (m.value != m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.value) & (m.col == m.f1.col) & (m.row == m.f1.row + 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.value) & (m.col == m.f1.col) & (m.row == m.f1.row + 2),
-        c.f4 << (m.type == 'cell') & (m.value == m.f1.value) & (m.col == m.f1.col) & (m.row == m.f1.row + 3)
-    )
-    def lose_vertical(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"Opponent vertical win detected at col {col}, row {row}")
-        c.assert_fact({'type': 'score', 'value': -1000})
+        # Horizontal
+        for r in range(rows):
+            for c0 in range(cols - 3):
+                window = [board[r][c0 + i] for i in range(4)]
+                if (window[:3] == [opponent] * 3 and window[3] == ' ') or \
+                (window[0] == ' ' and window[1:] == [opponent] * 3):
+                    logger.info(f"[Opponent Open Horizontal Triple] at row {r}, col {c0}")
+                    global_score['value'] += -75
+                    logger.info(f"score {global_score['value']}")
 
-    # diagonal (down-left)
-    @when_all(
-        c.f1 << (m.type == 'cell') & (m.value != ' ') & (m.value != m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row + 1) & (m.col == m.f1.col - 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row + 2) & (m.col == m.f1.col - 2),
-        c.f4 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row + 3) & (m.col == m.f1.col - 3)
-    )
-    def lose_diag_dl(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"Opponent diagonal win starting at ({row}, {col})")
-        c.assert_fact({'type': 'score', 'value': -1000})
+        # Vertical
+        for r in range(rows - 3):
+            for c0 in range(cols):
+                if (board[r][c0] == opponent and
+                    board[r + 1][c0] == opponent and
+                    board[r + 2][c0] == opponent and
+                    board[r + 3][c0] == ' '):
+                    logger.info(f"[Opponent Open Vertical Triple] at col {c0}, starting row {r}")
+                    global_score['value'] += -75
+                    logger.info(f"score {global_score['value']}")
 
-    # diagonal (down-right)
-    @when_all(
-        c.f1 << (m.type == 'cell') & (m.value != ' ') & (m.value != m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row + 1) & (m.col == m.f1.col + 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row + 2) & (m.col == m.f1.col + 2),
-        c.f4 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row + 3) & (m.col == m.f1.col + 3)
-    )
-    def lose_diag_dr(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"Opponent diagonal win starting at ({row}, {col})")
-        c.assert_fact({'type': 'score', 'value': -1000})
+        #Diag down left
+        for r in range(rows - 3):
+            for c0 in range(cols - 3):
+                diag = [board[r + i][c0 + i] for i in range(4)]
+                if diag[:3] == [opponent] * 3 and diag[3] == ' ':
+                    logger.info(f"[Opponent Open ↘ Triple] from ({r},{c0})")
+                    global_score['value'] += -75
+                    logger.info(f"score {global_score['value']}")
+                elif diag[0] == ' ' and diag[1:] == [opponent] * 3:
+                    logger.info(f"[Opponent Open ↘ Triple] ending at ({r+3},{c0+3})")
+                    global_score['value'] += -75
+                    logger.info(f"score {global_score['value']}")
+        
+        #Diag down right
+        for r in range(3, rows):
+            for c0 in range(cols - 3):
+                diag = [board[r - i][c0 + i] for i in range(4)]
+                if diag[:3] == [opponent] * 3 and diag[3] == ' ':
+                    logger.info(f"[Opponent Open ↗ Triple] from ({r},{c0})")
+                    global_score['value'] += -75
+                    logger.info(f"score {global_score['value']}")
+                elif diag[0] == ' ' and diag[1:] == [opponent] * 3:
+                    logger.info(f"[Opponent Open ↗ Triple] ending at ({r-3},{c0+3})")
+                    global_score['value'] += -75
+                    logger.info(f"score {global_score['value']}")
 
-    ## Opponent open triple rules (Opponent 3 in a row with unblocked 4th): score: -70 (Must block)
-    #  4 rules for each direction (horizontal, vertical, down-left diagonal, down-right diagonal)
+        ### EARLY GAME/POSITIONING RULES
 
-    # horizontal
-    @when_all(
-        c.f1 << (m.type == 'cell') & (m.value != ' ') & (m.value != m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row) & (m.col == m.f1.col + 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row) & (m.col == m.f1.col + 2),
-        c.f4 << (m.type == 'cell') & (m.value == ' ') & (m.row == m.f1.row) & (m.col == m.f1.col + 3)
-    )
-    def block_opponent_horizontal_triple(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"Detected opponent open triple starting at ({col}, {row})")
-        c.assert_fact({'type': 'score', 'value': -70})
-    
-    # vertical
-    @when_all(
-        c.f1 << (m.type == 'cell') & (m.value != ' ') & (m.value != m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.value) & (m.col == m.f1.col) & (m.row == m.f1.row + 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.value) & (m.col == m.f1.col) & (m.row == m.f1.row + 2),
-        c.f4 << (m.type == 'cell') & (m.value == ' ') & (m.col == m.f1.col) & (m.row == m.f1.row + 3)
-    )
-    def block_opponent_vertical_triple(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"Detected opponent open triple starting at ({col}, {row})")
-        c.assert_fact({'type': 'score', 'value': -70})
-    
-    # diagonal (down-left)
-    @when_all(
-        c.f1 << (m.type == 'cell') & (m.value != ' ') & (m.value != m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row + 1) & (m.col == m.f1.col - 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row + 2) & (m.col == m.f1.col - 2),
-        c.f4 << (m.type == 'cell') & (m.value == ' ') & (m.row == m.f1.row + 3) & (m.col == m.f1.col - 3)
-    )
-    def block_opponent_diag_dl_triple(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"Detected opponent open triple starting at ({col}, {row})")
-        c.assert_fact({'type': 'score', 'value': -70})
+        # Center column priority
+        if board[0][center_col] == ' ':
+            logger.info(f"[Favor Center Column] col = {center_col}")
+            global_score['value'] += 20
+            logger.info(f"score {global_score['value']}")
 
-    # diagonal (down-right)
-    @when_all(
-        c.f1 << (m.type == 'cell') & (m.value != ' ') & (m.value != m.target),
-        c.f2 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row + 1) & (m.col == m.f1.col + 1),
-        c.f3 << (m.type == 'cell') & (m.value == m.f1.value) & (m.row == m.f1.row + 2) & (m.col == m.f1.col + 2),
-        c.f4 << (m.type == 'cell') & (m.value == ' ') & (m.row == m.f1.row + 3) & (m.col == m.f1.col + 3)
-    )
-    def block_opponent_diag_dr_triple(c):
-        row = c.m.f1['row']
-        col = c.m.f1['col']
-        logger.info(f"Detected opponent open triple starting at ({col}, {row})")
-        c.assert_fact({'type': 'score', 'value': -70})
+        # Prioritize center positioning
+        for offset in [1, -1]:
+            near_col = center_col + offset
+            if 0 <= near_col < cols and board[0][near_col] == ' ':
+                logger.info(f"[Favor Near-Center Column] col = {near_col}")
+                global_score['value'] += 10
+                logger.info(f"score {global_score['value']}")
 
-    ### EARLY GAME (PLAY FOR GOOD POSITIONING AND SETUP) RULES ### -----------------------------------------------
-    
-    ## TODO: ADD EARLY GAME RULES ##
+        # Avoid edges
+        if board[0][0] == ' ':
+            logger.info("[Penalize Edge Column] col = 0")
+            global_score['value'] += -15
+            logger.info(f"score {global_score['value']}")
 
+        if board[0][cols - 1] == ' ':
+            logger.info(f"[Penalize Edge Column] col = {cols - 1}")
+            global_score['value'] += -15
+            logger.info(f"score {global_score['value']}")
+
+        # Prioritize center stacking
+        for r in range(1, rows):
+            if board[r][center_col] == target and board[r - 1][center_col] == ' ':
+                logger.info(f"[Stack in Center Column] at row = {r - 1}")
+                global_score['value'] += 25
+                logger.info(f"score {global_score['value']}")
+        
+        # Avoid stacking pointless columns
+        for c0 in range(cols):
+            for r in range(rows):
+                if board[r][c0] == ' ':
+                    # count how many slots below this one
+                    remaining = rows - r
+                    if remaining < 4:
+                        logger.info(f"[Penalize High Stack] at col = {c0}, row = {r}")
+                        global_score['value'] += -10
+                        logger.info(f"score {global_score['value']}")
+                    break  # only check first empty row in column
 
 ### ============= ADD MORE RULES HERE ================= ###
 ### =================================================== ###
@@ -227,32 +242,25 @@ def set_player_symbol(symbol):
 
 def board_to_facts(board, target):
     """Posts a context fact and converts the board into cell facts."""
-    # Post each cell in the board
-    for r, row in enumerate(board):
-        for c, val in enumerate(row):
-            post('connect4', {    ### Forward-chaining is built into the post function of
-                'type': 'cell',    ## the Durable - Rules library and is done automatically
-                'row': r,          ## to derive new facts
-                'col': c,
-                'value': val,
-                'target': my_game_symbol
-            })
+
+    post('connect4', {
+        'type': 'board',
+        'board': board,
+        'target': target
+    })
+
+
 
 def get_board_score():
     """Collects all score facts and returns total score."""
-
-    logger.info("===================== Evaluating board =========================")
-    host = get_host()
-    score_facts = [f for f in host.get_facts('connect4') if f.get('type') == 'score']
-    total = sum(f['value'] for f in score_facts)
-    logger.info(f"--------------------- SCORE: {total} -------------------------")
-    return total
+    return global_score['value']
 
 
 # --- Fact Reset Utility ---
 
 def reset_facts():
     """Safely retracts all facts from the 'connect4' ruleset if it exists."""
+    global_score['value'] = 0
     host = get_host()
     try:
         try:
