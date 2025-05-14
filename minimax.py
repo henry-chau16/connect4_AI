@@ -1,5 +1,9 @@
 from logic import get_valid_moves, make_move, is_full, check_winner, copy_board
 import inference
+import random
+
+### ----------------------------------- SEARCH ------------------------------------------- ###
+### -------------------------------------------------------------------------------------- ###
 
 # Evaluate the current board using the inference engine
 # Converts the board into logical facts and returns a score based on predefined rules
@@ -47,11 +51,13 @@ def choose_best_move(board, my_symbol, depth):
     best_score = float('-inf')            # Initialize best score
     best_col = None                       # Initialize best move (column)
 
-    for col in get_valid_moves(board):    # Try each valid move
-        new_board, _ = make_move(copy_board(board), col, my_symbol)  # Simulate move
-        score = minimax(new_board, depth - 1, False, float('-inf'), float('inf'), my_symbol, opponent_symbol)  # Evaluate move using minimax
+    for col in get_valid_moves(board):
+        new_board, _ = make_move(copy_board(board), col, my_symbol)
+        score = minimax(new_board, depth - 1, False, float('-inf'), float('inf'), my_symbol, opponent_symbol)
         if score > best_score:
             best_score = score
-            best_col = col
+            best_cols = [col]  # New best score, start fresh
+        elif score == best_score:
+            best_cols.append(col)  # Same best score, add to options
 
-    return best_col                       # Return the column with the best evaluation
+    return random.choice(best_cols)  # Randomly choose among best                   # Return the column with the best evaluation

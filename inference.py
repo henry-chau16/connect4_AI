@@ -11,8 +11,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-### ------- REASONING SEGMENT ------- ###
-### --------------------------------- ###
+### -------------------------------- REPRESENTATION & REASONING ---------------------------------- ###
+### ------------- (The representation and reasoning layers are mostly integrated) -----------------###
 
 from durable.lang import *
 
@@ -225,23 +225,19 @@ def set_player_symbol(symbol):
     global my_game_symbol
     my_game_symbol = symbol
 
-### ---------------- REPRESENTATION ------------------ ###
 def board_to_facts(board, target):
     """Posts a context fact and converts the board into cell facts."""
     # Post each cell in the board
     for r, row in enumerate(board):
         for c, val in enumerate(row):
-            post('connect4', {
-                'type': 'cell',
-                'row': r,
+            post('connect4', {    ### Forward-chaining is built into the post function of
+                'type': 'cell',    ## the Durable - Rules library and is done automatically
+                'row': r,          ## to derive new facts
                 'col': c,
                 'value': val,
                 'target': my_game_symbol
             })
 
-### -------------------------------------------------- ###
-
-### ------------------- REASONING -------------------- ###
 def get_board_score():
     """Collects all score facts and returns total score."""
 
