@@ -1,4 +1,7 @@
-#! /usr/bin/Team1_Connect_4_Agent.py 
+# coding: utf-8 # <- This is an encoding declaration
+#! /usr/bin/Team3_Connect_4_Agent.py 
+
+"""AI agent interface to be imported and used in driver (connect_4_main.pyc)"""
 
 # IMPORTS
 import inference
@@ -37,16 +40,16 @@ def init_agent(player_symbol, board_num_rows, board_num_cols, board):
    return True
 
 def what_is_your_move(board, game_rows, game_cols, my_game_symbol):
-   """ Decide your move, i.e., which column to drop a disk. """
-      # Insert your agent code HERE to decide which column to drop/insert your disk.
-   # Step 1: Tell the inference engine which symbol you're playing as
+   """ Decide your move, i.e., which column to drop a disk. 
+   Henry: 100% """
    
+   # Pass player token to inference engine
    inference.set_player_symbol(my_game_symbol)
-   # Step 2: Run Minimax with alpha-beta pruning to get the best column (0-indexed)
-   
+
+   # Run Minimax with alpha-beta pruning to get the best column (0-indexed)
    best_col = minimax.choose_best_move(board, my_game_symbol, depth=4)
    
-   # Step 3: Return the column as 1-indexed (expected by the game engine)
+   # Return the column as 1-indexed
    return best_col + 1
 
 def connect_4_result(board, winner, looser):
@@ -57,13 +60,13 @@ def connect_4_result(board, winner, looser):
 
     # Check if a draw
     if winner == "Draw":
-        print(">>> I am player TEAM1 <<<")
+        print(">>> I am player TEAM3 <<<")
         print(">>> The game resulted in a draw. <<<\n")
         return True
 
-    print(">>> I am player TEAM1 <<<")
+    print(">>> I am player TEAM3 <<<")
     print("The winner is " + winner)
-    if winner == "Team1":
+    if winner == "Team3":
         print("YEAH!!  :-)")
     else:
         print("BOO HOO HOO  :~(")

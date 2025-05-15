@@ -1,4 +1,6 @@
-# inference.py — Durable Rules Based Inference Engine for Connect 4
+# coding: utf-8 # <- This is an encoding declaration
+"""Provides the inference engine, including the rule base. The fact base implementation is built
+    into the Durable-Rules module"""
 
 import logging
 
@@ -12,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 ### -------------------------------- REPRESENTATION & REASONING ---------------------------------- ###
-### ------------- (The representation and reasoning layers are mostly integrated) -----------------###
+### ------- (The representation and reasoning layers are mostly integrated in this module) ------- ###
 
 from durable.lang import *
 
@@ -22,12 +24,15 @@ global_score = {'value': 0}
 
 with ruleset('connect4'):
 
-    ### OFFENSIVE (SCORING) RULES ### --------------------------------------------------
-
     @when_all(
         m.type == 'board'
     )
     def analyze_board(c):
+        """Composite rule function that increments score based on which rule fires
+        Henry: 30% Implemented templates for all major rules (horizontal directions for win open triple, and opponent open triples)
+                    and debugged rule firing bugs
+        Patricio: 35% Implemented Early Game and Positioning rules
+        Kaizan: 35% Implemented the rest of the major rules for the remaining directions (vertical and both diagonals)"""
         board = c.m.board
         target = c.m.target
         rows = len(board)
@@ -225,23 +230,25 @@ with ruleset('connect4'):
                         logger.info(f"score {global_score['value']}")
                     break  # only check first empty row in column
 
-### ============= ADD MORE RULES HERE ================= ###
-### =================================================== ###
     @when_all(
         (m.type == 'cell')
     )
     def catch_all(c):
         # This just absorbs unmatched facts so they don't cause MessageNotHandledException
         pass
+
+
 # --- Inference Functions ---------------------------------------------------------------
 
 def set_player_symbol(symbol):
-    """Sets the global player symbol for inference."""
+    """Sets the global player symbol for inference.
+    Henry: 100% """
     global my_game_symbol
     my_game_symbol = symbol
 
 def board_to_facts(board, target):
-    """Posts a context fact and converts the board into cell facts."""
+    """Posts a context fact and converts the board into cell facts.
+    Henry: 100% """
 
     post('connect4', {
         'type': 'board',
@@ -252,14 +259,16 @@ def board_to_facts(board, target):
 
 
 def get_board_score():
-    """Collects all score facts and returns total score."""
+    """Collects all score facts and returns total score.
+    Henry: 100% """
     return global_score['value']
 
 
 # --- Fact Reset Utility ---
 
 def reset_facts():
-    """Safely retracts all facts from the 'connect4' ruleset if it exists."""
+    """Safely retracts all facts from the 'connect4' ruleset if it exists.
+    Henry: 100% """
     global_score['value'] = 0
     host = get_host()
     try:
@@ -273,3 +282,7 @@ def reset_facts():
             host.retract_fact('connect4', fact)
     except Exception as e:
         print(f"[Warning] Could not reset facts: {e}")
+
+
+if __name__ == "__main__":
+    print("<module name> : Is intended to be imported and not executed.")

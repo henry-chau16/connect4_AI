@@ -1,3 +1,6 @@
+# coding: utf-8 # <- This is an encoding declaration
+"""Handles the Search functionality of the AI agent, using Minimax search with alpha-beta pruning"""
+
 from logic import get_valid_moves, make_move, is_full, check_winner, copy_board
 import inference
 import random
@@ -8,6 +11,9 @@ import random
 # Evaluate the current board using the inference engine
 # Converts the board into logical facts and returns a score based on predefined rules
 def evaluate_board(board, target):
+    """Gets board score for current board/simulated board
+    Henry: 100%
+    """
     inference.reset_facts()                  # Clear any existing facts in the inference engine
     inference.board_to_facts(board, target)         # Add current board state as facts
     return inference.get_board_score()      # Get a rule-based score for the current board
@@ -16,6 +22,9 @@ def evaluate_board(board, target):
 # Recursively simulates game states to determine the best move
 
 def minimax(board, depth, is_maximizing, alpha, beta, my_symbol, opponent_symbol):
+    """Runs Minimax search with pruning
+    Henry: 35% Implemented basic function structure
+    Rogelio 65% Implemented changes and fixes to interface with inference.py"""
     # Check for terminal conditions: win, lose, or draw, or depth limit
     if check_winner(board, my_symbol):
         return 1000                          # Winning board state for the current player
@@ -47,6 +56,9 @@ def minimax(board, depth, is_maximizing, alpha, beta, my_symbol, opponent_symbol
 
 # Chooses the best move for the current player using minimax evaluation
 def choose_best_move(board, my_symbol, depth):
+    """Calls Minimax search with pruning to find best move
+    Henry: 20% Implemented basic functionality
+    Rogelio: 80% Implemented fixes and added random score choice in case of ties"""
     opponent_symbol = 'O' if my_symbol == 'X' else 'X'  # Determine opponent's symbol
     best_score = float('-inf')            # Initialize best score
     best_col = None                       # Initialize best move (column)
@@ -61,3 +73,6 @@ def choose_best_move(board, my_symbol, depth):
             best_cols.append(col)  # Same best score, add to options
 
     return random.choice(best_cols)  # Randomly choose among best                   # Return the column with the best evaluation
+
+if __name__ == "__main__":
+    print("<module name> : Is intended to be imported and not executed.")
